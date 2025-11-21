@@ -1,0 +1,22 @@
+from .pipeline_step import PipelineStep
+from .upscaler_step import UpscalerStep
+from .upscale_core import _model_cache, _prepare_rrdb_args_for_model
+from upscale_realESRGAN import UpscaleRealESRGANStep
+
+class UpscaleRealESRGAN_X4Step(UpscaleRealESRGANStep):
+  model_name = "RealESRGAN_x4plus"
+
+  def get_rrdb_args(self):
+    return dict(
+      num_in_ch=3,
+      num_out_ch=3,
+      num_feat=64,
+      num_block=23,
+      num_grow_ch=32
+    )
+
+  def get_scale(self):
+    return 4
+
+  def get_model_path(self):
+    return "models/RealESRGAN_x4plus.pth"
