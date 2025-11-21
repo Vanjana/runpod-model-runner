@@ -11,6 +11,7 @@ class JsonServer:
     self.host = host
     self.port = port
 
+
     # Mutex/Semaphore für "nur 1 Job gleichzeitig"
     self.job_lock = threading.Lock()
 
