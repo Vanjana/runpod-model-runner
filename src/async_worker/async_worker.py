@@ -27,5 +27,6 @@ class AsyncWorker:
       self.client.write_json( self.user_id, self.job_id, "status.json", {"status": "FAILED", "error": str(e)} )
 
   def get_pipeline_by_name(self, name: str):
-    from pipelines import pipeline_qwen
-    return pipeline_qwen
+    #from pipelines import pipeline_qwen
+    from pipelines.pipeline_sdxl import pipeline
+    return pipeline

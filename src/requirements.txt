@@ -1,12 +1,13 @@
 # PyTorch ist im Base-Image enthalten, daher hier nicht nötig
 # torch==2.8.0+cu128
 
-transformers==4.40.0
-diffusers==0.19.0
-accelerate==0.21.0
+transformers
+diffusers
+accelerate
 xformers
 boto3
 flask
+gunicorn
 
 # Optional: neueste Diffusers direkt von GitHub, falls Features benötigt werden
 # git+https://github.com/huggingface/diffusers.git

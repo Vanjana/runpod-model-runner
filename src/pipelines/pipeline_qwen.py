@@ -1,6 +1,5 @@
 from pipelines.pipeline import Pipeline
 from steps.finalize import FinalizeStep
-
 from steps.face_enhancer_GFPGAN import GFPGANFaceEnhancer
 from steps.generate_qwen import GenerateQwenStep
 #from steps.upscale_realESRGAN_anime import UpscaleRealESRGAN_AnimeStep
