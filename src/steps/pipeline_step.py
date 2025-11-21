@@ -1,15 +1,18 @@
-class PipelineStep:
-  def __init__(self, steps):
-    self.steps = steps
+from abc import ABC, abstractmethod
+from typing import Dict, Any
 
-  def run(self, input_data):
-    data = input_data
+class PipelineStep(ABC):
+    """
+    Basis-Klasse für alle Pipeline-Schritte.
+    Jeder Schritt muss die run()-Methode implementieren.
+    """
 
-    for step in self.steps:
-      print(f"Running step: {step.__class__.__name__}")
-      data = step.run(data)
-
-      if data.get("status") == "error":
-        return data
-
-    return data
+    @abstractmethod
+    def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Führt den Schritt aus und gibt ein Dictionary zurück.
+        Das Dictionary kann z.B. einen 'status' Key enthalten:
+        - 'progress' -> Schritt erfolgreich
+        - 'error' -> Schritt fehlgeschlagen
+        """
+        pass

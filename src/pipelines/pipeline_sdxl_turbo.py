@@ -1,8 +1,8 @@
 from pipelines.pipeline import Pipeline
 from steps.finalize import FinalizeStep
-from steps.generate_sdxl import GenerateSDXLStep
+from steps.generate_sdxl_turbo import GenerateSDXLTurboStep
 
 pipeline = Pipeline(steps=[
-    GenerateSDXLStep(),
-    FinalizeStep()
+  GenerateSDXLTurboStep(),
+  FinalizeStep()
 ])

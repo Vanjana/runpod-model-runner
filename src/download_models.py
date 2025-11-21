@@ -5,6 +5,8 @@ import torch
 from pathlib import Path
 from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline
 from huggingface_hub import login
+from transformers import AutoModel, AutoProcessor
+from realesrgan import RealESRGAN
 import os
 import sys
 
@@ -16,7 +18,6 @@ DEFAULT_MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 # -----------------------------------------------------------------------
 # MODEL REGISTRY
-# gui_name → info: { hf_id, type, description }
 # -----------------------------------------------------------------------
 MODEL_REGISTRY = {
     # SDXL
@@ -35,25 +36,28 @@ MODEL_REGISTRY = {
 # -----------------------------------------------------------------------
 # LOADER-FUNKTIONEN
 # -----------------------------------------------------------------------
-def load_sdxl_base(model_id, cache_dir):
-    return StableDiffusionXLPipeline.from_pretrained(model_id, torch_dtype=torch.float16, cache_dir=cache_dir)
+def load_sdxl_base(model_id, target_dir):
+    pipe = StableDiffusionXLPipeline.from_pretrained(
+        model_id, torch_dtype=torch.float16
+    )
+    pipe.save_pretrained(target_dir)
 
-def load_sdxl_refiner(model_id, cache_dir):
-    return StableDiffusionXLImg2ImgPipeline.from_pretrained(model_id, torch_dtype=torch.float16, cache_dir=cache_dir)
+def load_sdxl_refiner(model_id, target_dir):
+    pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+        model_id, torch_dtype=torch.float16
+    )
+    pipe.save_pretrained(target_dir)
 
-def load_qwen_image(model_id, cache_dir):
-    from transformers import AutoModel, AutoProcessor
-    AutoModel.from_pretrained(model_id, cache_dir=cache_dir)
-    AutoProcessor.from_pretrained(model_id, cache_dir=cache_dir)
+def load_qwen_image(model_id, target_dir):
+    AutoModel.from_pretrained(model_id, cache_dir=target_dir)
+    AutoProcessor.from_pretrained(model_id, cache_dir=target_dir)
 
-def load_qwen_image_edit(model_id, cache_dir):
-    from transformers import AutoModel, AutoProcessor
-    AutoModel.from_pretrained(model_id, cache_dir=cache_dir)
-    AutoProcessor.from_pretrained(model_id, cache_dir=cache_dir)
+def load_qwen_image_edit(model_id, target_dir):
+    AutoModel.from_pretrained(model_id, cache_dir=target_dir)
+    AutoProcessor.from_pretrained(model_id, cache_dir=target_dir)
 
-def load_realesrgan(model_id, cache_dir):
-    from realesrgan import RealESRGAN
-    RealESRGAN.from_pretrained(model_id, cache_dir=cache_dir)
+def load_realesrgan(model_id, target_dir):
+    RealESRGAN.from_pretrained(model_id, cache_dir=target_dir)
 
 # Zuordnung Loader
 LOADERS = {
@@ -77,14 +81,17 @@ def download_model(model_key, target_dir):
     model_id = model_info["hf_id"]
     model_type = model_info["type"]
 
-    print(f"⬇️ Lade Modell '{model_key}' ({model_id}) nach '{target_dir}'...")
+    model_path = target_dir / model_key
+    model_path.mkdir(parents=True, exist_ok=True)
+
+    print(f"⬇️ Lade Modell '{model_key}' ({model_id}) nach '{model_path}'...")
 
     if model_type not in LOADERS:
         print(f"❌ Kein Loader für Modelltyp '{model_type}' definiert.")
         sys.exit(1)
 
     loader_fn = LOADERS[model_type]
-    loader_fn(model_id, cache_dir=target_dir)
+    loader_fn(model_id, model_path)
 
     print(f"✔️ '{model_key}' erfolgreich heruntergeladen!\n")
 

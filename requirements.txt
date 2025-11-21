@@ -1,0 +1,16 @@
+# PyTorch ist im Base-Image enthalten, daher hier nicht nötig
+# torch==2.8.0+cu128
+
+# neueste Diffusers direkt von GitHub, falls Features benötigt werden
+git+https://github.com/huggingface/diffusers.git
+
+transformers
+diffusers
+accelerate
+RealESRGAN
+xformers
+invisible_watermark
+safetensors
+boto3
+flask
+gunicorn
