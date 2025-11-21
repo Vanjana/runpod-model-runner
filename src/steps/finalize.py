@@ -1,4 +1,4 @@
-from pipeline_step import PipelineStep
+from steps.pipeline_step import PipelineStep
 from io import BytesIO
 import base64
 

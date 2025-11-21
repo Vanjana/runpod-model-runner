@@ -4,7 +4,7 @@ from realesrgan import RealESRGANer
 
 _model_cache = {}
 
-class RealESRGANBaseStep(PipelineStep):
+class UpscaleRealESRGANStep(PipelineStep):
 
     model_name = None  # Muss von Subklassen überschrieben werden
 

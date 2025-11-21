@@ -1,4 +1,4 @@
-from pipeline_step import PipelineStep  # Basis-Step-Klasse
+from steps.pipeline_step import PipelineStep  # Basis-Step-Klasse
 from diffusers import DiffusionPipeline
 import torch
 import os

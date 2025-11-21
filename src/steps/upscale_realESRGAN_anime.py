@@ -1,7 +1,4 @@
-from .pipeline_step import PipelineStep
-from .upscaler_step import UpscalerStep
-from .upscale_core import _model_cache, _prepare_rrdb_args_for_model
-from upscale_realESRGAN import UpscaleRealESRGANStep
+from steps.upscale_realESRGAN import UpscaleRealESRGANStep
 
 class UpscaleRealESRGAN_AnimeStep(UpscaleRealESRGANStep):
   model_name = "RealESRGAN_x4plus_anime_6B"

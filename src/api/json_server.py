@@ -5,7 +5,7 @@ from async_worker.s3_pipeline_client import S3PipelineClient
 from async_worker.async_worker import AsyncWorker
 
 class JsonServer:
-  def __init__(self, host="0.0.0.0", port=5000):
+  def __init__(self, host="0.0.0.0", port=8000):
     self.app = Flask(__name__)
     self.client = S3PipelineClient()
     self.host = host

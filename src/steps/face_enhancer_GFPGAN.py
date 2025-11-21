@@ -1,5 +1,5 @@
 from gfpgan import GFPGANer
-from face_enhancer import FaceEnhancerBaseStep
+from steps.face_enhancer import FaceEnhancerBaseStep
 
 class GFPGANFaceEnhancer(FaceEnhancerBaseStep):
   model_name = "GFPGANv1.4"

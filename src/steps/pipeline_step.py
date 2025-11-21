@@ -1,4 +1,4 @@
-class Pipeline:
+class PipelineStep:
   def __init__(self, steps):
     self.steps = steps
 
