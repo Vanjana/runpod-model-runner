@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>RunPod Test</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    textarea { width: 100%; height: 120px; }
+    #output { margin-top: 20px; white-space: pre-wrap; }
+    img { max-width: 100%; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>RunPod Request</h1>
+  <textarea id="inputText" placeholder="Prompt eingeben..."></textarea>
+  <button id="sendBtn">Absenden</button>
+
+  <div id="output"></div>
+
+  <script>
+    const sendBtn = document.getElementById('sendBtn');
+    const output = document.getElementById('output');
+
+    sendBtn.addEventListener('click', async () => {
+      output.textContent = "Sende Anfrage...";
+      const prompt = document.getElementById('inputText').value;
+
+      // POST request
+      const runRes = await fetch("https://lsq3yap690mrcb-8000.proxy.runpod.net/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "testuser",
+          input: {
+            pipeline_name: "qwen",
+            prompt_positive: prompt
+          }
+        })
+      });
+
+      const runData = await runRes.json();
+      output.textContent = JSON.stringify(runData, null, 2);
+
+      if (!runData.job_id) return;
+
+      const jobId = runData.job_id;
+
+      // Polling
+      const interval = setInterval(async () => {
+        const statusRes = await fetch(`https://lsq3yap690mrcb-8000.proxy.runpod.net/status/testuser/${jobId}`);
+        const statusData = await statusRes.json();
+
+        output.textContent = JSON.stringify(statusData, null, 2);
+
+        if (statusData.error) {
+          clearInterval(interval);
+          return;
+        }
+
+        if (statusData.status === "SUCCESS") {
+          clearInterval(interval);
+
+          if (statusData.result && statusData.result.image) {
+            const img = document.createElement('img');
+            img.src = `data:image/png;base64,${statusData.result.image}`;
+            output.appendChild(img);
+          }
+        }
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

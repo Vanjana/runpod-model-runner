@@ -1,12 +1,12 @@
 import threading
 import uuid
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from async_worker.s3_pipeline_client import S3PipelineClient
 from async_worker.async_worker import AsyncWorker
 
 class JsonServer:
   def __init__(self, host="0.0.0.0", port=8000):
-    self.app = Flask(__name__)
+    self.app = Flask(__name__, static_folder="static", static_url_path="/ui")
     self.client = S3PipelineClient()
     self.host = host
     self.port = port
@@ -19,6 +19,18 @@ class JsonServer:
     self._register_routes()
 
   def _register_routes(self):
+    @self.app.route("/")
+    def index():
+      return send_from_directory("static", "index.html")
+
+    @self.app.route("/<path:path>")
+    def catch_all(path):
+      # Wenn Datei existiert, liefere sie aus, sonst index.html
+      try:
+        return send_from_directory("static/ui", path)
+      except:
+        return send_from_directory("static/ui", "index.html")
+
     @self.app.route("/run", methods=["POST"])
     def run():
       data = request.get_json()
