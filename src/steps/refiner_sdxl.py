@@ -79,6 +79,5 @@ class RefinerSDXLStep(PipelineStep):
       "height": image_height,
       "inference_steps": inference_steps,
       "ai_creativity": ai_creativity,
-      "seed": seed,
-      "status": "progress"
+      "seed": seed
     }

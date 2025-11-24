@@ -14,4 +14,4 @@ class FinalizeStep(PipelineStep):
     image.save(buffer, format="PNG")
     image_b64 = base64.b64encode(buffer.getvalue()).decode()
 
-    return {**input_data, "image": image_b64, "status": "success"}
+    return {**input_data, "image": image_b64}

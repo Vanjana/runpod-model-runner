@@ -1,7 +1,6 @@
 from steps.pipeline_step import PipelineStep  # Basis-Step-Klasse
 from diffusers import DiffusionPipeline
 import torch
-import os
 
 # Pipeline-spezifische globale Instanz
 _qwen_image_pipe = None
@@ -10,14 +9,15 @@ def get_pipeline():
   global _qwen_image_pipe
 
   if _qwen_image_pipe is None:
-    model_path = os.environ.get("MODEL_PATH", "/app/models/qwen-image")
-    torch_dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+    model_name = "Qwen/Qwen-Image"
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Loading Qwen Image Pipeline from {model_path} on {device}")
-    _qwen_image_pipe = DiffusionPipeline.from_pretrained(
-      model_path, dtype=torch_dtype, local_files_only=True
-    )
+    torch_dtype = torch.bfloat16
+
+    print(f"Loading Qwen-Image Pipeline on {device}")
+
+    _qwen_image_pipe = DiffusionPipeline.from_pretrained(model_name, dtype=torch_dtype)
     _qwen_image_pipe = _qwen_image_pipe.to(device)
+
   return _qwen_image_pipe
 
 class GenerateQwenStep(PipelineStep):
@@ -48,7 +48,7 @@ class GenerateQwenStep(PipelineStep):
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
 
     # Generator für reproduzierbare Ergebnisse
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cuda"
     generator = torch.Generator(device=device).manual_seed(seed)
 
     # Image generieren
@@ -74,6 +74,5 @@ class GenerateQwenStep(PipelineStep):
       "height": image_height,
       "inference_steps": inference_steps,
       "ai_creativity": ai_creativity,
-      "seed": seed,
-      "status": "progress"
+      "seed": seed
     }

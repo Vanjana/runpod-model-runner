@@ -1,5 +1,5 @@
 from async_worker.s3_pipeline_client import S3PipelineClient
-
+from pipelines.pipeline_factory import PipelineFactory
 
 class AsyncWorker:
   def __init__(self, user_id, job_id, input_data):
@@ -21,12 +21,10 @@ class AsyncWorker:
       result = pipeline.run( self.input_data )
 
       # Status + Result speichern
-      self.client.write_json( self.user_id, self.job_id, "status.json", {"status": "FINISHED", **result} )
+      self.client.write_json( self.user_id, self.job_id, "status.json", {**result, "status": "FINISHED"} )
 
     except Exception as e:
       self.client.write_json( self.user_id, self.job_id, "status.json", {"status": "FAILED", "error": str(e)} )
 
   def get_pipeline_by_name(self, name: str):
-    #from pipelines import pipeline_qwen
-    from pipelines.pipeline_sdxl import pipeline
-    return pipeline
+    return PipelineFactory.get_pipeline_by_name(name)

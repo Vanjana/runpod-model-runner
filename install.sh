@@ -5,8 +5,8 @@ apt install -y vim
 # copy ssh key
 cp -ar /workspace/.ssh ~/
 
-if [ ! -d /models ]; then
-  mkdir /models
+if [ ! -d /workspace/models ]; then
+  mkdir /workspace/models
 fi
 
 if [ ! -d /workspace/app ]; then

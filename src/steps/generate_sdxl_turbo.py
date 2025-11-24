@@ -9,12 +9,13 @@ def get_sdxl_turbo_pipeline():
   global _sdxl_turbo_pipe
 
   if _sdxl_turbo_pipe is None:
-    torch_dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model_name = "stabilityai/sdxl-turbo"
+    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+    device = "cuda"
 
     print(f"Loading SDXL Turbo Pipeline on {device}")
 
-    _sdxl_turbo_pipe = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch_dtype, variant="fp16")
+    _sdxl_turbo_pipe = AutoPipelineForText2Image.from_pretrained(model_name, dtype=dtype, variant="fp16")
     _sdxl_turbo_pipe = _sdxl_turbo_pipe.to(device)
 
   return _sdxl_turbo_pipe
@@ -72,6 +73,5 @@ class GenerateSDXLTurboStep(PipelineStep):
       "width": image_width,
       "height": image_height,
       "inference_steps": inference_steps,
-      "seed": seed,
-      "status": "progress"
+      "seed": seed
     }
