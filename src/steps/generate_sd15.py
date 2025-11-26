@@ -13,7 +13,7 @@ def get_sd_pipeline(model_name="runwayml/stable-diffusion-v1-5"):
     print(f"Loading {model_name} on {device}")
     pipe = StableDiffusionPipeline.from_pretrained(
       model_name,
-      torch_dtype=torch.float16,
+      dtype=torch.float16,
       use_safetensors=True
     )
     pipe = pipe.to(device)

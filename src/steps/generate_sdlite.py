@@ -14,7 +14,7 @@ def get_sd_lite_pipeline():
     print("Loading Stable Diffusion Lite on", device)
     _sd_lite_pipe = StableDiffusionPipeline.from_pretrained(
       "CompVis/stable-diffusion-v1-4",
-      torch_dtype=torch.float16,
+      dtype=torch.float16,
       use_safetensors=True
     )
     _sd_lite_pipe = _sd_lite_pipe.to(device)

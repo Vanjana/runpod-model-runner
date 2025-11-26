@@ -26,9 +26,11 @@
   </div>
 
   <select id="pipeline">
-    <option value="qwen">Qwen Image</option>
+    <option value="sd15">SD 1.5</option>
+    <option value="sdlite">SD Lite</option>
     <option value="sdxl_turbo">SDXL Turbo</option>
     <option value="sdxl">SDXL</option>
+    <option value="qwen">Qwen Image</option>
   </select>
   <button id="sendBtn">Absenden</button>
 
@@ -79,8 +81,8 @@
 
         // JSON anzeigen, aber Bild ausblenden
         const jsonCopy = { ...statusData };
-        if (jsonCopy.result && jsonCopy.result.image) {
-          delete jsonCopy.result.image;
+        if (jsonCopy.image) {
+          delete jsonCopy.image;
         }
         output.textContent = JSON.stringify(jsonCopy, null, 2);
 
@@ -92,9 +94,9 @@
         if (statusData.status === "FINISHED") {
           clearInterval(interval);
 
-          if (statusData.result && statusData.result.image) {
+          if (statusData.image) {
             const img = document.createElement('img');
-            img.src = `data:image/png;base64,${statusData.result.image}`;
+            img.src = `data:image/png;base64,${statusData.image}`;
             imageContainer.appendChild(img);
           }
         }

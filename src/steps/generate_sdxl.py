@@ -17,11 +17,11 @@ def get_sdxl_pipeline():
 
     _sdxl_pipe = DiffusionPipeline.from_pretrained(
       "stabilityai/stable-diffusion-xl-base-1.0",
-      torch_dtype=torch.float16,
+      dtype=torch.float16,
       use_safetensors=True,
       variant="fp16"
     )
-    _sdxl_pipe.scheduler = _sdxl_pipe.scheduler.to(torch.float16)
+    #_sdxl_pipe.scheduler = _sdxl_pipe.scheduler.to(torch.float16)
     _sdxl_pipe = _sdxl_pipe.to(device)
 
   return _sdxl_pipe
