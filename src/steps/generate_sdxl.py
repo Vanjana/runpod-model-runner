@@ -10,12 +10,15 @@ def get_sdxl_pipeline():
   global _sdxl_pipe
 
   if _sdxl_pipe is None:
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if not torch.cuda.is_available():
+      raise RuntimeError("SDXL requires CUDA for fp16. CPU does not support Half precision.")
 
+    device = "cuda"
     print(f"Loading StableDiffusionXL Pipeline on {device}")
 
     _sdxl_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
-    _sdxl_pipe = _sdxl_pipe.to(device)
+    _sdxl_pipe.scheduler = _sdxl_pipe.scheduler.to(torch.float16)
+    _sdxl_pipe = _sdxl_pipe.to("cuda")
 
   return _sdxl_pipe
 
@@ -47,8 +50,7 @@ class GenerateSDXLStep(PipelineStep):
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
 
     # Generator für reproduzierbare Ergebnisse
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    generator = torch.Generator(device=device).manual_seed(seed)
+    generator = torch.Generator("cuda").manual_seed(seed)
 
     # Image generieren
     image = pipe(
@@ -73,6 +75,5 @@ class GenerateSDXLStep(PipelineStep):
       "height": image_height,
       "inference_steps": inference_steps,
       "ai_creativity": ai_creativity,
-      "seed": seed,
-      "status": "progress"
+      "seed": seed
     }
