@@ -45,5 +45,11 @@ class PipelineFactory:
     elif name == "sdxl":
       from pipelines.pipeline_sdxl import pipeline
       return pipeline
+    elif name == "sdlite":
+      from pipelines.pipeline_sdlite import pipeline
+      return pipeline
+    elif name == "sd15":
+      from pipelines.pipeline_sd15 import pipeline
+      return pipeline
     else:
       raise ValueError(f"Unknown pipeline name: {name}. Supported: 'qwen', 'sdxl_turbo', 'sdxl'")

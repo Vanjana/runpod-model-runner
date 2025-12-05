@@ -5,19 +5,32 @@
   <title>RunPod Test</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    textarea { width: 100%; height: 120px; }
+    textarea, input, select { width: 100%; margin-bottom: 10px; padding: 6px; box-sizing: border-box; }
     #output { margin-top: 20px; white-space: pre-wrap; }
     img { max-width: 100%; margin-top: 20px; display: block; }
+
+    /* Nebeneinander für width und height */
+    .dimensions { display: flex; gap: 10px; }
+    .dimensions input { flex: 1; }
   </style>
 </head>
 
 <body>
   <h1>RunPod Request UI Version</h1>
   <textarea id="inputText" placeholder="Prompt eingeben..."></textarea>
+  <textarea id="negativePrompt" placeholder="Negativer Prompt..."></textarea>
+
+  <div class="dimensions">
+    <input id="width" type="number" placeholder="Width (z. B. 512)" />
+    <input id="height" type="number" placeholder="Height (z. B. 512)" />
+  </div>
+
   <select id="pipeline">
-    <option value="qwen">Qwen Image</option>
+    <option value="sd15">SD 1.5</option>
+    <option value="sdlite">SD Lite</option>
     <option value="sdxl_turbo">SDXL Turbo</option>
     <option value="sdxl">SDXL</option>
+    <option value="qwen">Qwen Image</option>
   </select>
   <button id="sendBtn">Absenden</button>
 
@@ -33,17 +46,23 @@
       output.textContent = "Sende Anfrage...";
       imageContainer.innerHTML = ""; // vorherige Bilder löschen
       const prompt = document.getElementById('inputText').value;
+      const negativePrompt = document.getElementById('negativePrompt').value;
       const pipelineName = document.getElementById('pipeline').value;
+      const width = parseInt(document.getElementById('width').value) || 512;
+      const height = parseInt(document.getElementById('height').value) || 512;
 
       // POST request
-      const runRes = await fetch("https://lsq3yap690mrcb-8000.proxy.runpod.net/run", {
+      const runRes = await fetch("/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: "testuser",
           input: {
             pipeline_name: pipelineName,
-            prompt_positive: prompt
+            prompt_positive: prompt,
+            prompt_negative: negativePrompt,
+            width: width,
+            height: height
           }
         })
       });
@@ -57,13 +76,13 @@
 
       // Polling
       const interval = setInterval(async () => {
-        const statusRes = await fetch(`https://lsq3yap690mrcb-8000.proxy.runpod.net/status/testuser/${jobId}`);
+        const statusRes = await fetch(`/status/testuser/${jobId}`);
         const statusData = await statusRes.json();
 
         // JSON anzeigen, aber Bild ausblenden
         const jsonCopy = { ...statusData };
-        if (jsonCopy.result && jsonCopy.result.image) {
-          delete jsonCopy.result.image;
+        if (jsonCopy.image) {
+          delete jsonCopy.image;
         }
         output.textContent = JSON.stringify(jsonCopy, null, 2);
 
@@ -81,7 +100,7 @@
             imageContainer.appendChild(img);
           }
         }
-      }, 1000);
+      }, 2500);
     });
   </script>
 </body>

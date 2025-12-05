@@ -1,9 +1,8 @@
 from steps.pipeline_step import PipelineStep
 from diffusers import DiffusionPipeline
 import torch
-import os
+from torch import autocast
 
-# Pipeline-spezifische globale Instanz
 _sdxl_pipe = None
 
 def get_sdxl_pipeline():
@@ -16,9 +15,14 @@ def get_sdxl_pipeline():
     device = "cuda"
     print(f"Loading StableDiffusionXL Pipeline on {device}")
 
-    _sdxl_pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
-    _sdxl_pipe.scheduler = _sdxl_pipe.scheduler.to(torch.float16)
-    _sdxl_pipe = _sdxl_pipe.to("cuda")
+    _sdxl_pipe = DiffusionPipeline.from_pretrained(
+      "stabilityai/stable-diffusion-xl-base-1.0",
+      dtype=torch.float16,
+      use_safetensors=True,
+      variant="fp16"
+    )
+    #_sdxl_pipe.scheduler = _sdxl_pipe.scheduler.to(torch.float16)
+    _sdxl_pipe = _sdxl_pipe.to(device)
 
   return _sdxl_pipe
 
@@ -26,7 +30,7 @@ class GenerateSDXLStep(PipelineStep):
   def run(self, input_data):
     pipe = get_sdxl_pipeline()
 
-    # Parameter aus input_data
+    # Parameter
     positive_magic = input_data.get('preset_positive', [])
     negative_magic = input_data.get('preset_negative', [])
     positive_prompt = input_data.get('prompt_positive', '')
@@ -34,12 +38,12 @@ class GenerateSDXLStep(PipelineStep):
     image_width = int(input_data.get('width', 1024))
     image_height = int(input_data.get('height', 1024))
     inference_steps = input_data.get('inference_steps', 20)
-    ai_creativity = input_data.get('ai_creativity', 7.5)  # SDXL Default guidance scale
+    ai_creativity = input_data.get('ai_creativity', 7.5)
     seed = int(input_data.get('seed', torch.randint(0, 2**32 - 1, (1,)).item()))
 
     # Clamp / Validierung
-    image_width = max(256, min(image_width, 2048))
-    image_height = max(256, min(image_height, 2048))
+    image_width = max(256, min(image_width, 1536))   # sicherer für VRAM
+    image_height = max(256, min(image_height, 1536))
     ai_creativity = max(1.0, min(ai_creativity, 20.0))
     if isinstance(positive_magic, str):
       positive_magic = [positive_magic]
@@ -49,19 +53,23 @@ class GenerateSDXLStep(PipelineStep):
     final_positive = " ".join(filter(None, [positive_prompt] + positive_magic))
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
 
-    # Generator für reproduzierbare Ergebnisse
     generator = torch.Generator("cuda").manual_seed(seed)
 
-    # Image generieren
-    image = pipe(
-      prompt=final_positive,
-      negative_prompt=final_negative,
-      width=image_width,
-      height=image_height,
-      num_inference_steps=inference_steps,
-      guidance_scale=ai_creativity,
-      generator=generator
-    ).images[0]
+    # Inference Mode + autocast für FP16
+    device = "cuda"
+    with torch.inference_mode(), autocast(device_type=device, dtype=torch.float16):
+      image = pipe(
+        prompt=final_positive,
+        negative_prompt=final_negative,
+        width=image_width,
+        height=image_height,
+        num_inference_steps=inference_steps,
+        guidance_scale=ai_creativity,
+        generator=generator
+      ).images[0]
+
+    # Optional: GPU Cache leeren
+    torch.cuda.empty_cache()
 
     return {
       "image": image,
