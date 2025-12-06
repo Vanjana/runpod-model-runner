@@ -19,4 +19,17 @@ echo -e "${YELLOW}Verwende Cache unter: $HF_HOME${RESET}"
 cd /workspace/app/src
 
 echo -e "${GREEN}Starte main.py ...${RESET}"
-exec python main.py 2>&1 | tee /workspace/app/runner.log
+
+# Activate venv if exists
+if [ -d "/workspace/venv" ]; then
+    source /workspace/venv/bin/activate
+fi
+
+# Start uvicorn with production settings
+exec uvicorn main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 1 \
+    --log-level info \
+    --access-log \
+    --no-use-colors
