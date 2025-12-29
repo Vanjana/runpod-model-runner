@@ -84,8 +84,8 @@ class GenerateZImageD11Step(PipelineStep):
     final_positive = " ".join(filter(None, [positive_prompt] + positive_magic))
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
     
-    # Generator - bei Multi-GPU einfach "cuda" verwenden
-    generator = torch.Generator("cuda").manual_seed(seed)
+    # Generator - CPU verwenden für Multi-GPU Kompatibilität
+    generator = torch.Generator().manual_seed(seed)
     
     # Inference (Z-Image-Turbo doesn't use negative prompts with guidance_scale=0)
     print(f"Generating {image_width}x{image_height} image with {inference_steps} steps (Z-Image-Turbo DF11)...")

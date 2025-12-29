@@ -1,7 +1,6 @@
 from steps.pipeline_step import PipelineStep
 from diffusers import StableDiffusionPipeline
 import torch
-from torch import autocast
 
 _sd_pipelines = {}
 
@@ -45,10 +44,11 @@ class GenerateSDMultiStep(PipelineStep):
     guidance = input_data.get("ai_creativity", 7.5)
     seed = int(input_data.get("seed", torch.randint(0, 2**32 - 1, (1,)).item()))
 
-    # Generator - bei Multi-GPU einfach "cuda" verwenden
-    generator = torch.Generator("cuda").manual_seed(seed)
+    # Generator - CPU verwenden für Multi-GPU Kompatibilität
+    generator = torch.Generator().manual_seed(seed)
 
-    with torch.inference_mode(), autocast(device_type="cuda", dtype=torch.float16):
+    # Inference (Pipeline ist bereits in fp16, kein autocast nötig)
+    with torch.inference_mode():
       image = pipe(
         prompt=positive_prompt,
         negative_prompt=negative_prompt,
