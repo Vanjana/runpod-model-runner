@@ -9,14 +9,26 @@ def get_sd_pipeline(model_name="runwayml/stable-diffusion-v1-5"):
   if model_name not in _sd_pipelines:
     if not torch.cuda.is_available():
       raise RuntimeError("Stable Diffusion requires CUDA for FP16.")
-    device = "cuda"
-    print(f"Loading {model_name} on {device}")
-    pipe = StableDiffusionPipeline.from_pretrained(
-      model_name,
-      dtype=torch.float16,
-      use_safetensors=True
-    )
-    pipe = pipe.to(device)
+    
+    num_gpus = torch.cuda.device_count()
+    
+    if num_gpus > 1:
+      print(f"Loading {model_name} with Multi-GPU support ({num_gpus} GPUs)")
+      pipe = StableDiffusionPipeline.from_pretrained(
+        model_name,
+        torch_dtype=torch.float16,
+        use_safetensors=True,
+        device_map="balanced"  # Balanced distribution across GPUs
+      )
+    else:
+      print(f"Loading {model_name} on single GPU")
+      pipe = StableDiffusionPipeline.from_pretrained(
+        model_name,
+        torch_dtype=torch.float16,
+        use_safetensors=True
+      )
+      pipe = pipe.to("cuda")
+    
     _sd_pipelines[model_name] = pipe
   return _sd_pipelines[model_name]
 
@@ -33,10 +45,11 @@ class GenerateSDMultiStep(PipelineStep):
     guidance = input_data.get("ai_creativity", 7.5)
     seed = int(input_data.get("seed", torch.randint(0, 2**32 - 1, (1,)).item()))
 
-    generator = torch.Generator("cuda").manual_seed(seed)
-    device = "cuda"
+    # Generator auf dem Device der Pipeline
+    device = str(next(pipe.parameters()).device)
+    generator = torch.Generator(device).manual_seed(seed)
 
-    with torch.inference_mode(), autocast(device_type=device, dtype=torch.float16):
+    with torch.inference_mode(), autocast(device_type=device.split(':')[0], dtype=torch.float16):
       image = pipe(
         prompt=positive_prompt,
         negative_prompt=negative_prompt,

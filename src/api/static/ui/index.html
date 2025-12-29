@@ -12,6 +12,12 @@
     /* Nebeneinander für width und height */
     .dimensions { display: flex; gap: 10px; }
     .dimensions input { flex: 1; }
+    
+    /* Button Container */
+    .button-group { display: flex; gap: 10px; margin-bottom: 10px; }
+    .button-group button { flex: 1; }
+    
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 
@@ -31,20 +37,99 @@
     <option value="sdxl_turbo">SDXL Turbo</option>
     <option value="sdxl">SDXL</option>
     <option value="qwen">Qwen Image</option>
+    <option value="qwen_d11">Qwen Image (DF11)</option>
+    <option value="zimage">Z-Image-Turbo</option>
+    <option value="zimage_d11">Z-Image-Turbo (DF11)</option>
   </select>
-  <button id="sendBtn">Absenden</button>
+  
+  <div class="button-group">
+    <button id="sendBtn">Absenden</button>
+    <button id="stopPollingBtn" disabled>Stop Polling</button>
+    <button id="startPollingBtn" disabled>Start Polling</button>
+  </div>
 
   <div id="output"></div>
   <div id="imageContainer"></div>
 
   <script>
     const sendBtn = document.getElementById('sendBtn');
+    const stopPollingBtn = document.getElementById('stopPollingBtn');
+    const startPollingBtn = document.getElementById('startPollingBtn');
     const output = document.getElementById('output');
     const imageContainer = document.getElementById('imageContainer');
+    
+    let pollingInterval = null;
+    let currentJobId = null;
+
+    // Stop Polling
+    stopPollingBtn.addEventListener('click', () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+        output.textContent += "\n\n⏸️ Polling gestoppt";
+        stopPollingBtn.disabled = true;
+        startPollingBtn.disabled = false;
+      }
+    });
+
+    // Start Polling
+    startPollingBtn.addEventListener('click', () => {
+      if (currentJobId && !pollingInterval) {
+        output.textContent += "\n\n▶️ Polling fortgesetzt";
+        startPolling(currentJobId);
+        stopPollingBtn.disabled = false;
+        startPollingBtn.disabled = true;
+      }
+    });
+
+    function startPolling(jobId) {
+      pollingInterval = setInterval(async () => {
+        const statusRes = await fetch(`/status/testuser/${jobId}`);
+        const statusData = await statusRes.json();
+
+        // JSON anzeigen, aber Bild ausblenden
+        const jsonCopy = { ...statusData };
+        if (jsonCopy.image) {
+          delete jsonCopy.image;
+        }
+        output.textContent = JSON.stringify(jsonCopy, null, 2);
+
+        if (statusData.error) {
+          clearInterval(pollingInterval);
+          pollingInterval = null;
+          stopPollingBtn.disabled = true;
+          startPollingBtn.disabled = true;
+          return;
+        }
+
+        if (statusData.status === "FINISHED") {
+          clearInterval(pollingInterval);
+          pollingInterval = null;
+          stopPollingBtn.disabled = true;
+          startPollingBtn.disabled = true;
+
+          if (statusData.image) {
+            const img = document.createElement('img');
+            img.src = `data:image/png;base64,${statusData.image}`;
+            imageContainer.appendChild(img);
+          }
+        }
+      }, 2500);
+    }
 
     sendBtn.addEventListener('click', async () => {
       output.textContent = "Sende Anfrage...";
       imageContainer.innerHTML = ""; // vorherige Bilder löschen
+      
+      // Reset polling state
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
+      currentJobId = null;
+      stopPollingBtn.disabled = true;
+      startPollingBtn.disabled = true;
+      
       const prompt = document.getElementById('inputText').value;
       const negativePrompt = document.getElementById('negativePrompt').value;
       const pipelineName = document.getElementById('pipeline').value;
@@ -72,35 +157,12 @@
 
       if (!runData.job_id) return;
 
-      const jobId = runData.job_id;
+      currentJobId = runData.job_id;
+      stopPollingBtn.disabled = false;
+      startPollingBtn.disabled = true;
 
-      // Polling
-      const interval = setInterval(async () => {
-        const statusRes = await fetch(`/status/testuser/${jobId}`);
-        const statusData = await statusRes.json();
-
-        // JSON anzeigen, aber Bild ausblenden
-        const jsonCopy = { ...statusData };
-        if (jsonCopy.image) {
-          delete jsonCopy.image;
-        }
-        output.textContent = JSON.stringify(jsonCopy, null, 2);
-
-        if (statusData.error) {
-          clearInterval(interval);
-          return;
-        }
-
-        if (statusData.status === "FINISHED") {
-          clearInterval(interval);
-
-          if (statusData.image) {
-            const img = document.createElement('img');
-            img.src = `data:image/png;base64,${statusData.image}`;
-            imageContainer.appendChild(img);
-          }
-        }
-      }, 2500);
+      // Polling starten
+      startPolling(currentJobId);
     });
   </script>
 </body>

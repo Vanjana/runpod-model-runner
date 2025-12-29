@@ -13,3 +13,12 @@ safetensors
 boto3
 flask
 gunicorn
+
+# Qwen-Image (DFloat11) Dependencies
+dfloat11[cuda12]
+
+# FastAPI + ASGI Server (Production-ready)
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.9  # For file uploads
+pydantic>=2.9.0

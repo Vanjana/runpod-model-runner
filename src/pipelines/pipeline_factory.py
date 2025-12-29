@@ -34,10 +34,13 @@ class PipelineFactory:
   def get_pipeline_by_name(name):
     """
     Returns a pre-configured pipeline based on the name.
-    Supported names: 'qwen', 'sdxl_turbo', 'sdxl'
+    Supported names: 'qwen', 'qwen_d11', 'sdxl_turbo', 'sdxl', 'sdlite', 'sd15', 'zimage', 'zimage_d11'
     """
     if name == "qwen":
       from pipelines.pipeline_qwen import pipeline
+      return pipeline
+    elif name == "qwen_d11":
+      from pipelines.pipeline_qwen_d11 import pipeline
       return pipeline
     elif name == "sdxl_turbo":
       from pipelines.pipeline_sdxl_turbo import pipeline
@@ -51,5 +54,11 @@ class PipelineFactory:
     elif name == "sd15":
       from pipelines.pipeline_sd15 import pipeline
       return pipeline
+    elif name == "zimage":
+      from pipelines.pipeline_zimage import pipeline
+      return pipeline
+    elif name == "zimage_d11":
+      from pipelines.pipeline_zimage_d11 import pipeline
+      return pipeline
     else:
-      raise ValueError(f"Unknown pipeline name: {name}. Supported: 'qwen', 'sdxl_turbo', 'sdxl'")
+      raise ValueError(f"Unknown pipeline name: {name}. Supported: 'qwen', 'qwen_d11', 'sdxl_turbo', 'sdxl', 'sdlite', 'sd15', 'zimage', 'zimage_d11'")

@@ -1,7 +1,6 @@
 from steps.pipeline_step import PipelineStep
 from diffusers import DiffusionPipeline
 import torch
-from torch import autocast
 
 _sdxl_pipe = None
 
@@ -12,17 +11,26 @@ def get_sdxl_pipeline():
     if not torch.cuda.is_available():
       raise RuntimeError("SDXL requires CUDA for fp16. CPU does not support Half precision.")
 
-    device = "cuda"
-    print(f"Loading StableDiffusionXL Pipeline on {device}")
-
-    _sdxl_pipe = DiffusionPipeline.from_pretrained(
-      "stabilityai/stable-diffusion-xl-base-1.0",
-      dtype=torch.float16,
-      use_safetensors=True,
-      variant="fp16"
-    )
-    #_sdxl_pipe.scheduler = _sdxl_pipe.scheduler.to(torch.float16)
-    _sdxl_pipe = _sdxl_pipe.to(device)
+    num_gpus = torch.cuda.device_count()
+    
+    if num_gpus > 1:
+      print(f"Loading StableDiffusionXL Pipeline with Multi-GPU support ({num_gpus} GPUs)")
+      _sdxl_pipe = DiffusionPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0",
+        torch_dtype=torch.float16,
+        use_safetensors=True,
+        variant="fp16",
+        device_map="balanced"  # Balanced distribution across GPUs
+      )
+    else:
+      print(f"Loading StableDiffusionXL Pipeline on single GPU")
+      _sdxl_pipe = DiffusionPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0",
+        torch_dtype=torch.float16,
+        use_safetensors=True,
+        variant="fp16"
+      )
+      _sdxl_pipe = _sdxl_pipe.to("cuda")
 
   return _sdxl_pipe
 
@@ -53,11 +61,12 @@ class GenerateSDXLStep(PipelineStep):
     final_positive = " ".join(filter(None, [positive_prompt] + positive_magic))
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
 
-    generator = torch.Generator("cuda").manual_seed(seed)
+    # Generator auf dem Device der Pipeline
+    device = next(pipe.parameters()).device
+    generator = torch.Generator(device).manual_seed(seed)
 
-    # Inference Mode + autocast für FP16
-    device = "cuda"
-    with torch.inference_mode(), autocast(device_type=device, dtype=torch.float16):
+    # Inference Mode (ohne autocast - Pipeline ist bereits in fp16)
+    with torch.inference_mode():
       image = pipe(
         prompt=final_positive,
         negative_prompt=final_negative,
