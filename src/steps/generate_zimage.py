@@ -31,14 +31,19 @@ def get_zimage_pipeline():
     
     print(f"Loading Z-Image-Turbo Pipeline{' with Multi-GPU support' if num_gpus > 1 else ''}")
     
-    _zimage_pipe = ZImagePipeline.from_pretrained(
-      model_name,
-      torch_dtype=torch.bfloat16,  # Use bfloat16 for optimal performance
-      device_map="auto" if num_gpus > 1 else None,
-      low_cpu_mem_usage=False,
-    )
-    
-    if num_gpus == 1:
+    if num_gpus > 1:
+      _zimage_pipe = ZImagePipeline.from_pretrained(
+        model_name,
+        torch_dtype=torch.bfloat16,  # Use bfloat16 for optimal performance
+        device_map="balanced",  # Balanced distribution across GPUs
+        low_cpu_mem_usage=False,
+      )
+    else:
+      _zimage_pipe = ZImagePipeline.from_pretrained(
+        model_name,
+        torch_dtype=torch.bfloat16,
+        low_cpu_mem_usage=False,
+      )
       _zimage_pipe = _zimage_pipe.to("cuda")
     
     # Optional: Enable Flash Attention for better efficiency
@@ -76,9 +81,8 @@ class GenerateZImageStep(PipelineStep):
     final_positive = " ".join(filter(None, [positive_prompt] + positive_magic))
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
     
-    # Generator auf dem Device der Pipeline
-    device = next(pipe.parameters()).device
-    generator = torch.Generator(device).manual_seed(seed)
+    # Generator - bei Multi-GPU einfach "cuda" verwenden
+    generator = torch.Generator("cuda").manual_seed(seed)
     
     # Inference (Z-Image-Turbo doesn't use negative prompts with guidance_scale=0)
     print(f"Generating {image_width}x{image_height} image with {inference_steps} steps (Z-Image-Turbo)...")

@@ -60,9 +60,8 @@ class GenerateSDXLTurboStep(PipelineStep):
     # Turbo ignoriert negative_prompt in vielen Fällen → aber wir geben es trotzdem durch
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
 
-    # Generator auf dem Device der Pipeline
-    device = next(pipe.parameters()).device
-    generator = torch.Generator(device=device).manual_seed(seed)
+    # Generator - bei Multi-GPU einfach "cuda" verwenden
+    generator = torch.Generator("cuda").manual_seed(seed)
 
     # Turbo unterstützt *keine* guidance_scale -> wird einfach ignoriert
     image = pipe(

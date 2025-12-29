@@ -10,7 +10,7 @@ def get_qwen_pipeline():
   
   VRAM Requirements:
     - Single GPU: ~41 GB
-    - Multi-GPU (2x A40): Komponenten auf GPUs verteilt
+    - Multi-GPU (2x A40): Automatische Verteilung
   """
   global _qwen_pipe
   
@@ -25,20 +25,12 @@ def get_qwen_pipeline():
     
     if num_gpus > 1:
       print(f"Loading Qwen-Image (full model) with Multi-GPU support ({num_gpus} GPUs detected)")
-      # Bei Multi-GPU: Laden ohne device_map, dann manuell verteilen
+      # Bei Multi-GPU: balanced device_map für automatische Verteilung
       _qwen_pipe = DiffusionPipeline.from_pretrained(
         model_name,
         torch_dtype=torch.bfloat16,
+        device_map="balanced",
       )
-      # Text encoder auf GPU 0
-      if hasattr(_qwen_pipe, 'text_encoder') and _qwen_pipe.text_encoder is not None:
-        _qwen_pipe.text_encoder = _qwen_pipe.text_encoder.to("cuda:0")
-      # Transformer auf GPU 1 (größte Komponente)
-      if hasattr(_qwen_pipe, 'transformer') and _qwen_pipe.transformer is not None:
-        _qwen_pipe.transformer = _qwen_pipe.transformer.to("cuda:1")
-      # VAE auf GPU 1 (klein genug)
-      if hasattr(_qwen_pipe, 'vae') and _qwen_pipe.vae is not None:
-        _qwen_pipe.vae = _qwen_pipe.vae.to("cuda:1")
       vram_mode = f"distributed across {num_gpus} GPUs"
     else:
       print(f"Loading Qwen-Image (full model) on single GPU")
@@ -100,16 +92,8 @@ class GenerateQwenStep(PipelineStep):
     final_positive = " ".join(filter(None, [positive_prompt] + positive_magic))
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
     
-    # Generator auf dem Device der Pipeline (wichtig bei Multi-GPU!)
-    # Bei Multi-GPU ist Transformer auf cuda:1
-    try:
-      if hasattr(pipe, 'transformer') and pipe.transformer is not None:
-        device = str(pipe.transformer.device)
-      else:
-        device = str(next(pipe.parameters()).device)
-    except:
-      device = "cuda"
-    generator = torch.Generator(device).manual_seed(seed)
+    # Generator - bei Multi-GPU einfach "cuda" verwenden
+    generator = torch.Generator("cuda").manual_seed(seed)
     
     # Inference
     print(f"Generating {aspect_ratio} image with {inference_steps} steps...")

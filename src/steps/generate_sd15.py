@@ -45,11 +45,10 @@ class GenerateSDMultiStep(PipelineStep):
     guidance = input_data.get("ai_creativity", 7.5)
     seed = int(input_data.get("seed", torch.randint(0, 2**32 - 1, (1,)).item()))
 
-    # Generator auf dem Device der Pipeline
-    device = str(next(pipe.parameters()).device)
-    generator = torch.Generator(device).manual_seed(seed)
+    # Generator - bei Multi-GPU einfach "cuda" verwenden
+    generator = torch.Generator("cuda").manual_seed(seed)
 
-    with torch.inference_mode(), autocast(device_type=device.split(':')[0], dtype=torch.float16):
+    with torch.inference_mode(), autocast(device_type="cuda", dtype=torch.float16):
       image = pipe(
         prompt=positive_prompt,
         negative_prompt=negative_prompt,

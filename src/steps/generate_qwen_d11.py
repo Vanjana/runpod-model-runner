@@ -63,24 +63,20 @@ def get_qwen_d11_pipeline(enable_cpu_offload=False, cpu_offload_blocks=None, pin
     )
     
     # Pipeline mit dem komprimierten Transformer erstellen
-    _qwen_d11_pipe = DiffusionPipeline.from_pretrained(
-      model_name,
-      transformer=transformer,
-      torch_dtype=torch.bfloat16,
-    )
-    
-    # Bei Multi-GPU: Komponenten manuell verteilen
     if use_multi_gpu:
-      # Text encoder auf GPU 0
-      if hasattr(_qwen_d11_pipe, 'text_encoder') and _qwen_d11_pipe.text_encoder is not None:
-        _qwen_d11_pipe.text_encoder = _qwen_d11_pipe.text_encoder.to("cuda:0")
-      # Transformer (DFloat11) auf GPU 1
-      _qwen_d11_pipe.transformer = _qwen_d11_pipe.transformer.to("cuda:1")
-      # VAE auf GPU 1
-      if hasattr(_qwen_d11_pipe, 'vae') and _qwen_d11_pipe.vae is not None:
-        _qwen_d11_pipe.vae = _qwen_d11_pipe.vae.to("cuda:1")
+      _qwen_d11_pipe = DiffusionPipeline.from_pretrained(
+        model_name,
+        transformer=transformer,
+        torch_dtype=torch.bfloat16,
+        device_map="balanced",
+      )
       vram_mode = f"distributed across {num_gpus} GPUs"
     else:
+      _qwen_d11_pipe = DiffusionPipeline.from_pretrained(
+        model_name,
+        transformer=transformer,
+        torch_dtype=torch.bfloat16,
+      )
       # Single GPU: enable_model_cpu_offload nutzen
       _qwen_d11_pipe.enable_model_cpu_offload()
       vram_mode = "~16 GB VRAM" if enable_cpu_offload else "~28 GB VRAM"
@@ -146,16 +142,8 @@ class GenerateQwenD11Step(PipelineStep):
     final_positive = " ".join(filter(None, [positive_prompt] + positive_magic))
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
     
-    # Generator auf dem Device der Pipeline (wichtig bei Multi-GPU!)
-    # Bei Multi-GPU ist Transformer auf cuda:1
-    try:
-      if hasattr(pipe, 'transformer') and pipe.transformer is not None:
-        device = str(pipe.transformer.device)
-      else:
-        device = str(next(pipe.parameters()).device)
-    except:
-      device = "cuda"
-    generator = torch.Generator(device).manual_seed(seed)
+    # Generator - bei Multi-GPU einfach "cuda" verwenden
+    generator = torch.Generator("cuda").manual_seed(seed)
     
     # Inference
     print(f"Generating {aspect_ratio} image with {inference_steps} steps...")

@@ -61,9 +61,8 @@ class GenerateSDXLStep(PipelineStep):
     final_positive = " ".join(filter(None, [positive_prompt] + positive_magic))
     final_negative = " ".join(filter(None, [negative_prompt] + negative_magic))
 
-    # Generator auf dem Device der Pipeline
-    device = next(pipe.parameters()).device
-    generator = torch.Generator(device).manual_seed(seed)
+    # Generator - bei Multi-GPU einfach "cuda" verwenden
+    generator = torch.Generator("cuda").manual_seed(seed)
 
     # Inference Mode (ohne autocast - Pipeline ist bereits in fp16)
     with torch.inference_mode():
